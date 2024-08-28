@@ -1,0 +1,6 @@
+@SlotGameBackend_HostAddress = http://localhost:5166
+
+GET {{SlotGameBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
