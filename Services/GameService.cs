@@ -40,6 +40,20 @@ namespace SlotGameBackend.Services
                 isActive = true
             };
             var serverSeedHash = _provablyFairService.HashServerSeed(session.serverSeed);
+
+            var isWallet = _context.wallets.Any(x => x.userId == user.userId);
+            if (!isWallet)
+            {
+                var newWallet = new Wallet()
+                {
+                    walletId = Guid.NewGuid(),
+                    userId = user.userId,
+                    balance = 1000
+                };
+                _context.wallets.Add(newWallet);
+                _context.SaveChanges();
+            }
+            var wallet = _context.wallets.FirstOrDefault(x => x.userId == user.userId);
             if (existingSession != null)
             {
                 var response1 = new gameSessionResponse
@@ -49,7 +63,8 @@ namespace SlotGameBackend.Services
                     sessionStartTime = existingSession.sessionStartTime,
                     clientSeed = existingSession.clientSeed,
                     serverSeedHash = serverSeedHash,
-                    isActive = existingSession.isActive
+                    isActive = existingSession.isActive,
+                    balance=wallet.balance
                 };
                 return response1;
             }
@@ -61,7 +76,8 @@ namespace SlotGameBackend.Services
                 sessionStartTime=session.sessionStartTime,
                 clientSeed=session.clientSeed,
                 serverSeedHash = serverSeedHash,
-                isActive =session.isActive
+                isActive =session.isActive,
+                balance=wallet.balance
             };
 
             _context.gameSessions.Add(session);
@@ -82,6 +98,7 @@ namespace SlotGameBackend.Services
             if(session != null)
             {
                 session.isActive = false;
+                session.sessionEndTime = DateTime.Now;
                 session.lastActivityTime= DateTime.Now;
 
                 _context.gameSessions.Update(session);
@@ -90,7 +107,7 @@ namespace SlotGameBackend.Services
         }
         
 
-        public Spin SpinReels(int betAmount,string clientSeed)
+        public SpinResponse SpinReels(int betAmount,string clientSeed)
         {
             var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
             var user = _context.users.SingleOrDefault(x => x.email == UserEmailClaim);
@@ -107,16 +124,33 @@ namespace SlotGameBackend.Services
                 throw new InvalidOperationException("No active session found.");
             }
 
-            var wallet=_context.wallets.FirstOrDefault(x=>x.userId == user.userId);
+            var isWallet=_context.wallets.Any(x=>x.userId == user.userId);
+            if (!isWallet)
+            {
+                var newWallet = new Wallet()
+                {
+                    walletId = Guid.NewGuid(),
+                    userId = user.userId,
+                    balance = 1000
+                };
+                _context.wallets.Add(newWallet);
+                _context.SaveChanges();
+            }
+            var wallet = _context.wallets.FirstOrDefault(x => x.userId == user.userId);
 
             if(wallet.balance < betAmount) {
 
                 throw new InvalidOperationException("Insufficient balance.");
             }
 
-            if (betAmount < _settings.minimumBetLimit)
+            var settings =  _context.settings.FirstOrDefault();
+            if (settings == null)
             {
-                throw new InvalidOperationException("bet amount is more than minimum limit");
+                throw new InvalidOperationException("minimum amount is not set yet");
+            }
+            if (betAmount < settings.minimumBetLimit)
+            {
+                throw new InvalidOperationException("bet amount is less than minimum limit");
             }
             wallet.balance -= betAmount;
            
@@ -139,12 +173,24 @@ namespace SlotGameBackend.Services
                 betAmount = betAmount,
                 winAmount = winnings,
                 spinTime=DateTime.Now,
-                serverSeed=session.serverSeed,
                 reelsOutcome=reelsOutComeJson
             };
+            _context.spinResults.Add(spinResult);
+            _context.SaveChanges();
 
             session.spinResults.Add(spinResult);
-            return spinResult;
+            var response = new SpinResponse
+            {
+                spinResultId = Guid.NewGuid(),
+                sessionId = session.sessionId,
+                betAmount = betAmount,
+                winAmount = winnings,
+                spinTime = DateTime.Now,
+                serverSeed = session.serverSeed,
+                reelsOutcome = reelsOutComeJson
+            };
+
+            return response;
         }
 
         private string SerializeReelresult(Symbol[,] reelResults)
@@ -171,7 +217,13 @@ namespace SlotGameBackend.Services
 
             var symbols=_context.symbols.ToList();
 
-            for(int row = 0; row < 3; row++)
+            if (symbols == null || symbols.Count == 0)
+            {
+                throw new InvalidOperationException("No symbols available for generating reel results.");
+            }
+
+
+            for (int row = 0; row < 3; row++)
             {
                 for(int col = 0; col < 5; col++)
                 {
@@ -208,7 +260,7 @@ namespace SlotGameBackend.Services
             }
             return winnings;
         }
-        public IEnumerable<Spin> gamehistory(Guid userId)
+        public IEnumerable<gameHistoryResponse> gamehistory(Guid userId, int pageNumber, int pageSize)
         {
             var user = _context.users.Include(u => u.sessions)
                                .ThenInclude(gs => gs.spinResults)
@@ -217,14 +269,26 @@ namespace SlotGameBackend.Services
             // If the user is not found, return an empty list (or handle it as appropriate)
             if (user == null)
             {
-                return new List<Spin>();
+                return new List<gameHistoryResponse>();
             }
 
             // Get all spins from the user's game sessions
-            var spins = user.sessions.SelectMany(gs => gs.spinResults).ToList();
-
+            var spins = user.sessions.SelectMany(gs => gs.spinResults).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
+            var list=new List<gameHistoryResponse>();
+            foreach (var spin in spins) {
+                var response = new gameHistoryResponse
+                {
+                    spinResultId = spin.spinResultId,
+                    sessionId = spin.sessionId,
+                    betAmount = spin.betAmount,
+                    winAmount = spin.winAmount,
+                    reelsOutcome = spin.reelsOutcome,
+                    spinTime = spin.spinTime,
+                };
+                list.Add(response);
+            }
             // Return the list of spins (game history)
-            return spins;
+            return list;
         }
     }
 }

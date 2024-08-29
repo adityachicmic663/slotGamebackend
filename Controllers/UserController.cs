@@ -18,7 +18,7 @@ namespace SlotGameBackend.Controllers
             _walletService = walletService;
         }
 
-        [HttpGet("depositRequest")]
+        [HttpPost("depositRequest")]
         public IActionResult CreateTransaction(DepositRequest request)
         {
             if (!ModelState.IsValid)

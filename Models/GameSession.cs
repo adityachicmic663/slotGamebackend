@@ -22,7 +22,7 @@ namespace SlotGameBackend.Models
 
         public UserModel user { get; set; }
 
-        public ICollection<Spin> spinResults {  get; set; }
+        public ICollection<Spin> spinResults {  get; set; }= new List<Spin>();
        
 
     }

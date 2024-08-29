@@ -5,7 +5,7 @@ namespace SlotGameBackend.Models
     public class Wallet
     {
         [Key]
-        public Guid walletId {  get; set; }=Guid.NewGuid();
+        public Guid walletId {  get; set; }
 
         public Guid userId { get; set; }
 

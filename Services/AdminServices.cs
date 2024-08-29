@@ -52,13 +52,16 @@ namespace SlotGameBackend.Services
 
             foreach( var position in positions )
             {
+                if( position.Item1 >2 || position.Item2 > 4)
+                {
+                    throw new InvalidDataException("index out of 3*5 matrix");
+                }
                 payline.positions.Add(new payLinePositions
                 {
                     positionId = Guid.NewGuid(),
                     X= position.Item1,
                     Y= position.Item2,
                     payLineId=payline.payLineId
-
                 });
             }
             _context.payLines.Add(payline);
@@ -109,6 +112,12 @@ namespace SlotGameBackend.Services
             }
         }
 
+        public async Task<List<Symbol>> getSymbol()
+        {
+            var list=await _context.symbols.ToListAsync();
+
+            return list;
+        }
         private async Task<string> SaveImageFileAsync(IFormFile image)
         {
                 if (!Directory.Exists(_uploadPath))
@@ -124,6 +133,28 @@ namespace SlotGameBackend.Services
               return filePath;
         }
 
-       
+       public async Task<List<PayLineResponse>> getPayline()
+        {
+            var list=await _context.payLines.Include(x=>x.positions).ToListAsync();
+
+            var paylines=new List<PayLineResponse>();
+
+            foreach(var line in list)
+            {
+                var response = new PayLineResponse
+                {
+                    paylineId = line.payLineId,
+                    multiplier = line.multiplier,
+                    positions = line.positions.Select(pos => new payLinePositionResponse
+                    {
+                        positionId = pos.positionId,
+                        X = pos.X,
+                        Y = pos.Y,
+                    }).ToList()
+                };
+            paylines.Add(response);
+            }
+            return paylines;
+        }
     }
 }

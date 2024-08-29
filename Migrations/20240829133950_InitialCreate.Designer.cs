@@ -12,8 +12,8 @@ using SlotGameBackend;
 namespace SlotGameBackend.Migrations
 {
     [DbContext(typeof(slotDataContext))]
-    [Migration("20240828113930_ThirdCreate")]
-    partial class ThirdCreate
+    [Migration("20240829133950_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -95,17 +95,10 @@ namespace SlotGameBackend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("GameSessionsessionId")
-                        .HasColumnType("char(36)");
-
                     b.Property<int>("betAmount")
                         .HasColumnType("int");
 
                     b.Property<string>("reelsOutcome")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("serverSeed")
                         .IsRequired()
                         .HasColumnType("longtext");
 
@@ -120,7 +113,7 @@ namespace SlotGameBackend.Migrations
 
                     b.HasKey("spinResultId");
 
-                    b.HasIndex("GameSessionsessionId");
+                    b.HasIndex("sessionId");
 
                     b.ToTable("spinResults");
                 });
@@ -156,21 +149,19 @@ namespace SlotGameBackend.Migrations
                     b.Property<Guid?>("UserModeluserId")
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("adminResponse")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<int>("amount")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("requestedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("transactionStatus")
-                        .HasColumnType("int");
+                    b.Property<string>("transactionStatus")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
-                    b.Property<int>("type")
-                        .HasColumnType("int");
+                    b.Property<string>("type")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<Guid>("walletId")
                         .HasColumnType("char(36)");
@@ -282,9 +273,13 @@ namespace SlotGameBackend.Migrations
 
             modelBuilder.Entity("SlotGameBackend.Models.Spin", b =>
                 {
-                    b.HasOne("SlotGameBackend.Models.GameSession", null)
+                    b.HasOne("SlotGameBackend.Models.GameSession", "gameSession")
                         .WithMany("spinResults")
-                        .HasForeignKey("GameSessionsessionId");
+                        .HasForeignKey("sessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("gameSession");
                 });
 
             modelBuilder.Entity("SlotGameBackend.Models.Transaction", b =>

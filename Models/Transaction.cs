@@ -17,8 +17,6 @@ namespace SlotGameBackend.Models
 
         public TransactionStatus transactionStatus { get; set; }
 
-        public string adminResponse {  get; set; }  
-
         public DateTime?  ApprovedAt { get; set; }
 
         public Wallet wallet { get; set; }

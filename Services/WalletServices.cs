@@ -25,9 +25,23 @@ namespace SlotGameBackend.Services
             {
                 throw new InvalidOperationException("User not found.");
             }
+
+            var isWallet = _context.wallets.Any(x => x.userId == user.userId);
+
+            if (!isWallet)
+            {
+                var newWallet = new Wallet
+                {
+                    walletId=Guid.NewGuid(),
+                    userId=user.userId,
+                    balance=1000
+                };
+            }
+            var wallet = _context.wallets.FirstOrDefault(x => x.userId == user.userId);
+           
             var transaction = new Transaction
             {
-                walletId = user.wallet.walletId,
+                walletId = wallet.walletId,
                 amount = amount,
                 type = type,
                 transactionStatus = TransactionStatus.Pending
@@ -36,9 +50,9 @@ namespace SlotGameBackend.Services
             _context.SaveChanges();
         }
 
-        public IEnumerable<TransactionResponse> GetPendingTransactions()
+        public IEnumerable<TransactionResponse> GetPendingTransactions(int pageNumber,int pageSize)
         {
-           var list = _context.transactions.Include(t=>t.wallet).ThenInclude(x=>x.user).Where(t=>t.transactionStatus==TransactionStatus.Pending).OrderByDescending(x=>x.requestedAt).ToList();
+           var list = _context.transactions.Include(t=>t.wallet).ThenInclude(x=>x.user).Where(t=>t.transactionStatus==TransactionStatus.Pending).OrderByDescending(x=>x.requestedAt).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
 
             var responseList= new List<TransactionResponse>();
 
@@ -48,9 +62,9 @@ namespace SlotGameBackend.Services
                 {
                     transactionId = transaction.transactionId,
                     requestedAt = transaction.requestedAt,
-                    type = transaction.type,
+                    type = transaction.type.ToString(),
                     amount = transaction.amount,
-                    status=TransactionStatus.Pending
+                    status=TransactionStatus.Pending.ToString()
                 };
                 responseList.Add(response);
             }
@@ -63,6 +77,7 @@ namespace SlotGameBackend.Services
             if (transaction!=null || transaction.transactionStatus==TransactionStatus.Pending){
                 transaction.transactionStatus = TransactionStatus.Approved;
                 transaction.amount = transaction.amount;
+                transaction.ApprovedAt=DateTime.Now;
 
                 if (transaction.type == TransactionType.Deposit)
                 {
@@ -83,7 +98,7 @@ namespace SlotGameBackend.Services
         {
             var transaction = _context.transactions.Include(t => t.wallet).ThenInclude(x => x.user).FirstOrDefault(t => t.transactionId == transactionId);
 
-            if (transaction != null)
+            if (transaction != null || transaction.transactionStatus!=TransactionStatus.Approved)
             {
                 transaction.transactionStatus = TransactionStatus.Rejected;
 
@@ -92,27 +107,35 @@ namespace SlotGameBackend.Services
             }
         }
 
-        public IEnumerable<TransactionResponse> GetTransactionHistory(Guid userId)
+        public IEnumerable<TransactionResponse> GetTransactionHistory(Guid userId,int pageNumber,int pageSize)
         {
-            var user = _context.users.FirstOrDefault(x=>x.userId==userId);
+            var user = _context.users.Include(u=>u.wallet).FirstOrDefault(x=>x.userId==userId);
             if (user == null)
             {
                 throw new InvalidDataException("user is not found");
             }
-            var transactionList = _context.transactions.Where(x => x.walletId == user.wallet.walletId).OrderByDescending(x => x.requestedAt).ThenByDescending(x => x.ApprovedAt).ToList();
            
+             var wallet=user.wallet;
+           
+                if (wallet == null)
+                {
+                    throw new InvalidDataException("Wallet not found for the user.");
+                }
+            
+            var transactionList = _context.transactions.Where(x => x.walletId == wallet.walletId).OrderByDescending(x => x.requestedAt).ThenByDescending(x => x.ApprovedAt).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
 
+     
             List<TransactionResponse> result = new List<TransactionResponse>();
 
             foreach(var transaction in transactionList)
             {
-                var response = new TransactionResponse()
+                var response = new TransactionResponse
                 {
                     transactionId = transaction.transactionId,
                     requestedAt = transaction.requestedAt,
-                    type = transaction.type,
+                    type = transaction.type.ToString(),
                     amount = transaction.amount,
-                    status=transaction.transactionStatus
+                    status=transaction.transactionStatus.ToString()
                 };
                 result.Add(response);
                
@@ -124,20 +147,23 @@ namespace SlotGameBackend.Services
 
         public IEnumerable<TransactionResponse> SearchTransaction(QueryType type,int pageNumber,int pageSize) {
         {
-                DateTime startDate = new DateTime();
-                DateTime endDate = new DateTime();
-                if (type == QueryType.today)
+                DateTime startDate = DateTime.MinValue;
+                DateTime endDate = DateTime.MaxValue;
+
+                switch (type)
                 {
-                    startDate = DateTime.Today;
-                    endDate = startDate.AddDays(1).AddTicks(-1);
-                }
-                else if(type == QueryType.lastday) 
-                {
-                    endDate=DateTime.Now;
-                    startDate = endDate.AddDays(-1);
-                }else if(type == QueryType.lastmonth){
-                    endDate=DateTime.Now;
-                    startDate = endDate.AddMonths(-1);
+                    case QueryType.today:
+                        startDate = DateTime.Today;
+                        endDate = startDate.AddDays(1).AddTicks(-1);
+                        break;
+                    case QueryType.lastday:
+                        endDate = DateTime.Today.AddTicks(-1);
+                        startDate = endDate.AddDays(-1);
+                        break;
+                    case QueryType.lastmonth:
+                        endDate = DateTime.Now;
+                        startDate = endDate.AddMonths(-1);
+                        break;
                 }
 
                 var transactions=_context.transactions.Where(t=>t.ApprovedAt>=startDate && t.ApprovedAt<=endDate).OrderByDescending(t=>t.ApprovedAt).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
@@ -145,13 +171,13 @@ namespace SlotGameBackend.Services
                 var responseList=new List<TransactionResponse>();
                 foreach (var transaction in transactions)
                 {
-                    var response = new TransactionResponse()
+                    var response = new TransactionResponse
                     {
                         transactionId = transaction.transactionId,
-                        status = transaction.transactionStatus,
+                        status = transaction.transactionStatus.ToString(),
                         amount = transaction.amount,
                         requestedAt = transaction.requestedAt,
-                        type = transaction.type
+                        type = transaction.type.ToString()
                     };
                     responseList.Add(response);
                 }

@@ -8,8 +8,8 @@ namespace SlotGameBackend.Services
 
         void EndSession();
 
-        Spin SpinReels(int betAmount,string clientSeed);
+        SpinResponse SpinReels(int betAmount,string clientSeed);
 
-        IEnumerable<Spin> gamehistory(Guid userId);
+        IEnumerable<gameHistoryResponse> gamehistory(Guid userId,int pageNumber,int pageSize);
     }
 }

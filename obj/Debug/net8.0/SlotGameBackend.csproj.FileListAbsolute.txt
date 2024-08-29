@@ -114,3 +114,4 @@ C:\Users\ChicMic\source\repos\SlotGameBackend\SlotGameBackend\obj\Debug\net8.0\S
 C:\Users\ChicMic\source\repos\SlotGameBackend\SlotGameBackend\obj\Debug\net8.0\ref\SlotGameBackend.dll
 C:\Users\ChicMic\source\repos\SlotGameBackend\SlotGameBackend\bin\Debug\net8.0\Swashbuckle.AspNetCore.Annotations.dll
 C:\Users\ChicMic\source\repos\SlotGameBackend\SlotGameBackend\bin\Debug\net8.0\Newtonsoft.Json.dll
+C:\Users\ChicMic\source\repos\SlotGameBackend\SlotGameBackend\obj\Debug\net8.0\SlotGameBackend.sourcelink.json

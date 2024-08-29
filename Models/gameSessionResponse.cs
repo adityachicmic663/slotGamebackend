@@ -11,6 +11,8 @@
         public string clientSeed { get; set; }
 
         public string serverSeedHash { get; set; }
+        
+        public int balance { get; set; }
 
         public bool isActive {  get; set; } 
     }

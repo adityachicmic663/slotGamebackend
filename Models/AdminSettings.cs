@@ -6,7 +6,10 @@ namespace SlotGameBackend.Models
     {
         [Key]
         public Guid settingId {  get; set; }    
+
         public int minimumBetLimit { get; set; } 
+
+
 
     }
 }

@@ -55,7 +55,7 @@ namespace SlotGameBackend.Controllers
                 return Ok(new ResponseModel
                 {
                     statusCode = 200,
-                    message = "your session started",
+                    message = "your session stopped",
                     data = "no data",
                     isSuccess = true
                 });
@@ -122,12 +122,12 @@ namespace SlotGameBackend.Controllers
             try
             {
                 var isValid=_provablyFairService.VerifyOutcome(request.serverSeed, request.providedHash);
-                if(isValid == false)
+                if(isValid)
                 {
                     return Ok(new ResponseModel
                     {
                         statusCode = 200,
-                        message = " cheating",
+                        message = "no cheating",
                         data = "no data",
                         isSuccess = true
                     });
@@ -135,7 +135,7 @@ namespace SlotGameBackend.Controllers
                 return Ok(new ResponseModel
                 {
                     statusCode = 200,
-                    message = " no cheating",
+                    message = " cheating",
                     data = "no data",
                     isSuccess = true
                 });

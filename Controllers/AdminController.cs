@@ -26,11 +26,11 @@ namespace SlotGameBackend.Controllers
         }
 
         [HttpGet("pendingtransaction")]
-        public ActionResult<List<TransactionResponse>> GetPendingTransactions()
+        public ActionResult<List<TransactionResponse>> GetPendingTransactions([FromQuery]PendingRequest request)
         {
             try
             {
-                var list = _walletService.GetPendingTransactions();
+                var list = _walletService.GetPendingTransactions(request.pageNumber,request.pageSize);
                 if (list == null)
                 {
                    return NotFound( new ResponseModel
@@ -131,7 +131,7 @@ namespace SlotGameBackend.Controllers
             }
         }
         [HttpGet("transactionHistory")]
-        public IActionResult GetTransactionHistory(transHistoryRequest request)
+        public IActionResult GetTransactionHistory([FromQuery] transHistoryRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -145,7 +145,7 @@ namespace SlotGameBackend.Controllers
             }
             try
             {
-                var list=_walletService.GetTransactionHistory(request.userId);
+                var list=_walletService.GetTransactionHistory(request.userId,request.pageNumber,request.pageSize);
                 return Ok(new ResponseModel
                 {
                     statusCode = 200,
@@ -346,8 +346,8 @@ namespace SlotGameBackend.Controllers
 
             }
         }
-        [HttpGet("gamehistory/userId")]
-        public IActionResult gameHistory(Guid userId)
+        [HttpGet("gamehistory")]
+        public IActionResult gameHistory([FromQuery]gameHistoryRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -361,7 +361,7 @@ namespace SlotGameBackend.Controllers
             }
             try
             {
-                var list=_gameService.gamehistory(userId);
+                var list=_gameService.gamehistory(request.userId,request.pageNumber,request.pageSize);
                 return Ok(new ResponseModel
                 {
                     statusCode = 200,
@@ -384,7 +384,7 @@ namespace SlotGameBackend.Controllers
 
         [HttpGet("searchTransaction")]
 
-        public IActionResult searchTransaction(SearchRequest request)
+        public IActionResult searchTransaction([FromQuery]SearchRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -421,8 +421,58 @@ namespace SlotGameBackend.Controllers
             }
 
         }
+        [HttpGet("getsymbols")]
+        public async Task<IActionResult> getSymbols()
+        {
+            try
+            {
+                var list = await _adminServices.getSymbol();
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "your symbols available",
+                    data = list,
+                    isSuccess = true
+                });
 
-       
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
+        [HttpGet("getPaylines")]
+        public async Task<IActionResult> getPayline()
+        {
+            try
+            {
+                var list = await _adminServices.getPayline();
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "your paylines available",
+                    data = list,
+                    isSuccess = true
+                });
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
 
     }
 

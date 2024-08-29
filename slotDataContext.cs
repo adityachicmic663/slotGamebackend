@@ -54,6 +54,12 @@ namespace SlotGameBackend
              .Property(p => p.payLineId)
              .ValueGeneratedOnAdd();
 
+            modelBuilder.Entity<Transaction>()
+                .Property(p => p.transactionStatus)
+                .HasConversion<string>();
+            modelBuilder.Entity<Transaction>()
+                .Property(p=>p.type)
+                .HasConversion<string>();
         }
 
         public void SeedData()
