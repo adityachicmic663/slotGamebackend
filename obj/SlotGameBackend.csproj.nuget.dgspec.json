@@ -54,9 +54,21 @@
               "target": "Package",
               "version": "[1.6.0, )"
             },
+            "BoldReports.Net.Core": {
+              "target": "Package",
+              "version": "[6.2.34, )"
+            },
+            "EPPlus": {
+              "target": "Package",
+              "version": "[7.3.0, )"
+            },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[8.0.8, )"
+            },
+            "Microsoft.CodeAnalysis.Common": {
+              "target": "Package",
+              "version": "[4.8.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",

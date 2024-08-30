@@ -10,7 +10,13 @@
 
         public int winAmount { get; set; }
 
-        public string serverSeed { get; set; }
+        public int balance {  get; set; }
+
+        public string serverSeed {  get; set; }
+
+        public string nounce {  get; set; }
+
+        public string combinedSeedHash { get; set; }
 
         public string reelsOutcome { get; set; }
 

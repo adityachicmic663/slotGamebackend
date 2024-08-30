@@ -18,9 +18,10 @@ namespace SlotGameBackend.Services
 
         Task<List<PayLineResponse>> getPayline();
 
+        Task<List<UserResponse>> getUsers();
 
+        Task<bool> blockUser(Guid userId);
 
-
-
+        Task<byte[]> GenerateGameHistoryExcelReport(Guid userId, DateTime startDate, DateTime endDate);
     }
 }

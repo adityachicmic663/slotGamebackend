@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SlotGameBackend.Models;
 using SlotGameBackend.Requests;
 using SlotGameBackend.Services;
+using System.Collections.Generic;
 
 namespace SlotGameBackend.Controllers
 {
@@ -473,6 +474,99 @@ namespace SlotGameBackend.Controllers
                 });
             }
         }
+        [HttpGet("getUsers")]
+        public async Task<IActionResult> getUsers()
+        {
+            try
+            {
+                var list =await  _adminServices.getUsers();
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "your user list is here",
+                    data = list,
+                    isSuccess = true
+                });
+            }catch(Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
+        [HttpPost("blockUser")]
+
+        public async Task<IActionResult> blockUser(BlockRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseModel
+                {
+                    statusCode = 400,
+                    message = "Invalid limit",
+                    data = "No data",
+                    isSuccess = false
+                });
+            }
+            try
+            {
+                var isblock = await _adminServices.blockUser(request.userId);
+                if (!isblock)
+                {
+                    return Conflict(new ResponseModel
+                    {
+                        statusCode = 409,
+                        message = "already blocked",
+                        data = "No data",
+                        isSuccess = false
+                    });
+                }
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "user is blocked",
+                    data = "No data",
+                    isSuccess = true
+                });
+            }catch(Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+
+        }
+        [HttpGet("Download-gameHistory")]
+        public async Task<IActionResult> DownloadGameHistory([FromQuery]downloadRequest request)
+        {
+            try
+            {
+                var excelReport = await _adminServices.GenerateGameHistoryExcelReport(request.userId,request.startDate,request.endDate);
+
+                return File(excelReport, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "GameHistoryReport.xlsx");
+               
+            }catch(Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+            
+        }
+
+
 
     }
 

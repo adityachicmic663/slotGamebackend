@@ -58,6 +58,10 @@ namespace SlotGameBackend.Services
         {
             var user = await  _context.users.SingleOrDefaultAsync(x => x.email == request.email);
 
+            if (user.isBlocked)
+            {
+                throw new InvalidOperationException("sorry you are blocked by the admin");
+            }
             if (user == null)
             {
                 return null;
@@ -95,6 +99,11 @@ namespace SlotGameBackend.Services
         public async Task<bool> Forgotpassword(string email)
         {
             var user = await  _context.users.SingleOrDefaultAsync(x => x.email == email);
+
+            if (user.isBlocked)
+            {
+                throw new InvalidOperationException("sorry you are blocked by the user");
+            }
 
             if (user == null)
             {
@@ -134,8 +143,13 @@ namespace SlotGameBackend.Services
             }
             
             var user = await _context.users.SingleOrDefaultAsync(x => x.otpToken == request.token);
-          
-            if (user == null)
+
+            if (user.isBlocked)
+            {
+                throw new InvalidOperationException("sorry you are blocked by the user");
+            }
+
+            if (user == null )
             {
                 return false;
             }
@@ -154,10 +168,16 @@ namespace SlotGameBackend.Services
             {
                 var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
                 var user = _context.users.SingleOrDefault(x => x.email == UserEmailClaim);
+
                 if (user == null)
                 {
                     Console.WriteLine("User not found.");
                     return null;
+                }
+
+                if (user.isBlocked)
+                {
+                    throw new InvalidOperationException("sorry you are blocked by the user");
                 }
                 if (file.Length > 0 && IsImageFile(file))
                 {

@@ -121,7 +121,7 @@ namespace SlotGameBackend.Controllers
             }
             try
             {
-                var isValid=_provablyFairService.VerifyOutcome(request.serverSeed, request.providedHash);
+                var isValid=_provablyFairService.VerifyOutcome(request.serverSeed,request.clientSeed,request.nounce, request.providedHash);
                 if(isValid)
                 {
                     return Ok(new ResponseModel

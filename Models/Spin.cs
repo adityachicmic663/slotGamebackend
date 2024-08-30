@@ -15,6 +15,8 @@ namespace SlotGameBackend.Models
 
         public int winAmount {  get; set; }
 
+        public string clientSeed { get; set; }
+
        public string reelsOutcome { get; set; }
 
         public DateTime spinTime { get; set; }

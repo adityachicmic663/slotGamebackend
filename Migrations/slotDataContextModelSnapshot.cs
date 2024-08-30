@@ -42,10 +42,6 @@ namespace SlotGameBackend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("clientSeed")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<bool>("isActive")
                         .HasColumnType("tinyint(1)");
 
@@ -94,6 +90,10 @@ namespace SlotGameBackend.Migrations
 
                     b.Property<int>("betAmount")
                         .HasColumnType("int");
+
+                    b.Property<string>("clientSeed")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("reelsOutcome")
                         .IsRequired()
@@ -192,6 +192,9 @@ namespace SlotGameBackend.Migrations
                     b.Property<string>("hashPassword")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("isBlocked")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("lastName")
                         .HasColumnType("longtext");

@@ -8,7 +8,6 @@
 
         public DateTime sessionStartTime { get; set; }
 
-        public string clientSeed { get; set; }
 
         public string serverSeedHash { get; set; }
         

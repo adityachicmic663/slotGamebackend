@@ -1,7 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualBasic;
+using OfficeOpenXml.Style;
+using OfficeOpenXml;
 using SlotGameBackend.Models;
+using System.IO;
 using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -11,12 +14,14 @@ namespace SlotGameBackend.Services
     public class AdminServices:IAdminServices
     {
         private readonly slotDataContext _context;
+        private readonly IGameService _gameService;
        
         private readonly string _uploadPath;
 
       
-        public AdminServices(slotDataContext context,IConfiguration configuration) {
+        public AdminServices(slotDataContext context,IConfiguration configuration,IGameService gameService) {
             _context = context;
+            _gameService = gameService;
             _uploadPath = configuration.GetValue<string>("UploadPath");
         }
         public async Task SetMinBetLimit(int minBetLimit)
@@ -156,5 +161,100 @@ namespace SlotGameBackend.Services
             }
             return paylines;
         }
-    }
+
+        public async Task<List<UserResponse>> getUsers()
+        {
+            var list = await _context.users.Where(x=>x.role=="user").ToListAsync();
+
+            var newList=new List<UserResponse>();
+
+            foreach(var user in list)
+            {
+                var response = new UserResponse
+                {
+                    UserId = user.userId,
+                    UserName = user.userName,
+                    UserEmail = user.email,
+                    isBlocked = user.isBlocked
+                };
+                newList.Add(response);
+            }
+            return newList;
+        }
+
+        public async Task<bool> blockUser(Guid userId)
+        {
+            var user=await _context.users.FirstOrDefaultAsync(x=>x.userId== userId);
+
+            if (user.isBlocked==false)
+            {
+                user.isBlocked = true;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<byte[]> GenerateGameHistoryExcelReport(Guid userId,DateTime startDate,DateTime endDate)
+        {
+            var user =await  _context.users.Include(u => u.sessions)
+                               .ThenInclude(gs => gs.spinResults)
+                               .FirstOrDefaultAsync(x => x.userId == userId);
+
+            if(user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            var spins=user.sessions.SelectMany(gs=>gs.spinResults).Where(spin=>spin.spinTime>=startDate && spin.spinTime<=endDate).OrderByDescending(spin=>spin.spinTime).ToList();
+
+            if (!spins.Any())
+            {
+                throw new Exception("No spin results found for the specified date range.");
+            }
+
+
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("GameHistory");
+
+                worksheet.Cells[1, 1].Value = "spinResultId";
+                worksheet.Cells[1, 2].Value = "sessionId";
+                worksheet.Cells[1, 3].Value = "betAmount";
+                worksheet.Cells[1, 4].Value = "winAmount";
+                worksheet.Cells[1, 5].Value = "reelOutcome";
+                worksheet.Cells[1, 6].Value = "spinTime";
+
+                using (var range = worksheet.Cells[1, 1, 1, 6])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                }
+
+                int row = 2;
+                foreach (var result in spins)
+                {
+                    worksheet.Cells[row, 1].Value = result.spinResultId.ToString();
+                    worksheet.Cells[row, 2].Value = result.sessionId.ToString();
+                    worksheet.Cells[row, 3].Value = result.betAmount;
+                    worksheet.Cells[row, 4].Value = result.winAmount;
+                    worksheet.Cells[row, 5].Value = result.reelsOutcome;
+                    worksheet.Cells[row, 6].Value = result.spinTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    row++;
+                }
+
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                var excelReport = package.GetAsByteArray();
+
+                var filePath = Path.Combine(_uploadPath, "GameHistoryReport.xlsx");
+                await File.WriteAllBytesAsync(filePath, excelReport);
+
+                return excelReport;
+            }
+            }
+        }
 }

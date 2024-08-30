@@ -20,9 +20,10 @@ namespace SlotGameBackend.Services
                 return BitConverter.ToString(hash).Replace("-", "").ToLower();
             }
         }
-        public  int DetermineOutcome(string serverSeed, string clientSeed)
+
+        public  int DetermineOutcome(string serverSeed, string clientSeed,string nounce)
         {
-            string combinedSeed=serverSeed+clientSeed;
+            string combinedSeed=serverSeed+clientSeed +nounce;
 
             using (var sha256 = SHA256.Create())
             {
@@ -42,9 +43,10 @@ namespace SlotGameBackend.Services
         }
 
 
-        public bool VerifyOutcome(string serverSeed, string providedHash)
+        public bool VerifyOutcome(string serverSeed,string clientSeed,string nounce, string providedHash)
         {
-            var calculatedHash = HashServerSeed(serverSeed);
+            string combinedSeed=serverSeed+clientSeed+nounce;
+            var calculatedHash = HashServerSeed(combinedSeed);
             return calculatedHash.Equals(providedHash, StringComparison.OrdinalIgnoreCase);
         }
 

@@ -14,9 +14,7 @@ namespace SlotGameBackend.Models
 
         public bool isActive {  get; set; }
 
-        public string clientSeed {  get; set; } 
-
-        public string serverSeed { get; set; } 
+        public string serverSeed {  get; set; }
 
         public DateTime lastActivityTime {  get; set; }= DateTime.Now;  
 

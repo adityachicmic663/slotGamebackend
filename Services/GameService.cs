@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using SlotGameBackend.Models;
 using System.Security.Claims;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace SlotGameBackend.Services
 {
@@ -12,6 +15,7 @@ namespace SlotGameBackend.Services
         private  Random _random;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private AdminSettings _settings;
+        
         private readonly IProvablyFairService _provablyFairService;
 
         public GameService(slotDataContext context, IHttpContextAccessor httpContextAccessor,IProvablyFairService provablyFairService)
@@ -35,8 +39,7 @@ namespace SlotGameBackend.Services
                 sessionId = Guid.NewGuid(),
                 userId = user.userId,
                 sessionStartTime = DateTime.Now,
-                clientSeed = Guid.NewGuid().ToString(),
-                serverSeed = Guid.NewGuid().ToString(),
+                serverSeed=Guid.NewGuid().ToString(),
                 isActive = true
             };
             var serverSeedHash = _provablyFairService.HashServerSeed(session.serverSeed);
@@ -61,7 +64,6 @@ namespace SlotGameBackend.Services
                     sessionId = existingSession.sessionId,
                     userId = existingSession.userId,
                     sessionStartTime = existingSession.sessionStartTime,
-                    clientSeed = existingSession.clientSeed,
                     serverSeedHash = serverSeedHash,
                     isActive = existingSession.isActive,
                     balance=wallet.balance
@@ -74,7 +76,6 @@ namespace SlotGameBackend.Services
                 sessionId=session.sessionId,
                 userId=session.userId,
                 sessionStartTime=session.sessionStartTime,
-                clientSeed=session.clientSeed,
                 serverSeedHash = serverSeedHash,
                 isActive =session.isActive,
                 balance=wallet.balance
@@ -111,6 +112,8 @@ namespace SlotGameBackend.Services
         {
             var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
             var user = _context.users.SingleOrDefault(x => x.email == UserEmailClaim);
+
+            string nounce=Guid.NewGuid().ToString();
 
             if (user == null)
             {
@@ -156,7 +159,7 @@ namespace SlotGameBackend.Services
            
             session.lastActivityTime = DateTime.Now;
 
-            int outcomeSeed = _provablyFairService.DetermineOutcome(session.serverSeed, clientSeed);
+            int outcomeSeed = _provablyFairService.DetermineOutcome(session.serverSeed, clientSeed,nounce);
 
             Symbol[,] reelresults = GenerateReelResults(outcomeSeed);
 
@@ -172,21 +175,28 @@ namespace SlotGameBackend.Services
                 sessionId=session.sessionId,
                 betAmount = betAmount,
                 winAmount = winnings,
+                clientSeed = clientSeed,
                 spinTime=DateTime.Now,
                 reelsOutcome=reelsOutComeJson
             };
             _context.spinResults.Add(spinResult);
             _context.SaveChanges();
 
-            session.spinResults.Add(spinResult);
+            string combinedSeed = session.serverSeed + clientSeed+nounce;
+
+            var combinedSeedHash = _provablyFairService.HashServerSeed(combinedSeed);
+
             var response = new SpinResponse
             {
-                spinResultId = Guid.NewGuid(),
+                spinResultId =spinResult.spinResultId,
                 sessionId = session.sessionId,
                 betAmount = betAmount,
                 winAmount = winnings,
+                balance=wallet.balance,
+                nounce=nounce,
                 spinTime = DateTime.Now,
-                serverSeed = session.serverSeed,
+                serverSeed=session.serverSeed,
+                combinedSeedHash = combinedSeedHash,
                 reelsOutcome = reelsOutComeJson
             };
 
@@ -211,7 +221,7 @@ namespace SlotGameBackend.Services
 
         private Symbol[,] GenerateReelResults(int seed)
         {
-            _random = new Random(seed);
+             _random = new Random(seed);
 
             Symbol[,] reelResults = new Symbol[3, 5];
 
@@ -273,9 +283,10 @@ namespace SlotGameBackend.Services
             }
 
             // Get all spins from the user's game sessions
-            var spins = user.sessions.SelectMany(gs => gs.spinResults).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
-            var list=new List<gameHistoryResponse>();
-            foreach (var spin in spins) {
+            var spins = user.sessions.SelectMany(gs => gs.spinResults).OrderByDescending(gs=>gs.spinTime).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            var list = new List<gameHistoryResponse>();
+            foreach (var spin in spins)
+            {
                 var response = new gameHistoryResponse
                 {
                     spinResultId = spin.spinResultId,

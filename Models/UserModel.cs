@@ -20,6 +20,8 @@ namespace SlotGameBackend.Models
 
         public string hashPassword { get; set; }
 
+        public bool isBlocked { get; set; } = false;
+
         public string otpToken { get; set; }
 
         public DateTime? OtpTokenExpiry { get; set; }
