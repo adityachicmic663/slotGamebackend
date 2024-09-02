@@ -206,14 +206,14 @@ namespace SlotGameBackend.Services
 
         private string SerializeReelresult(Symbol[,] reelResults)
         {
-            var rows=new List<List<string>>();
+            var rows=new List<List<Symbol>>();
 
             for(int i=0;i<reelResults.GetLength(0);i++)
             {
-                var row = new List<string>();
+                var row = new List<Symbol>();
                 for(int j = 0; j < reelResults.GetLength(1); j++)
                 {
-                    row.Add(reelResults[i, j].symbolName);
+                    row.Add(reelResults[i, j]);
                 }
                 rows.Add(row);
             }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SlotGameBackend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e9afc6076dc4dcfeb1b3a30b5018b25e40cd3e54")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e52a426bfc486ef87ac1f403828c6c7b760c0aa")]
 [assembly: System.Reflection.AssemblyProductAttribute("SlotGameBackend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SlotGameBackend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

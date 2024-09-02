@@ -332,5 +332,33 @@ namespace SlotGameBackend.Controllers
                 });
             }
         }
+
+        [HttpGet("user-profile")]
+        [Authorize(Roles ="user,admin")]
+        public async Task<IActionResult> getProfile()
+        {
+            try
+            {
+                var user =await  _authService.getProfile();
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "your profile",
+                    data =user,
+                    isSuccess = true
+                });
+            }catch(Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
+
+
     }
 }

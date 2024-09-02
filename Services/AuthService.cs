@@ -257,8 +257,8 @@ namespace SlotGameBackend.Services
 
        public async Task<bool> changePassword(string oldPassword,string newPassword)
        {
-            var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
-            var user = await _context.users.SingleOrDefaultAsync(x => x.email == UserEmailClaim);
+              var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+              var user = await _context.users.SingleOrDefaultAsync(x => x.email == UserEmailClaim);
 
             if (user == null)
             {
@@ -270,11 +270,31 @@ namespace SlotGameBackend.Services
             {
                 user.hashPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
 
-                _context.users.Update(user);
-               await _context.SaveChangesAsync();
-                return true;
+                   _context.users.Update(user);
+                 await _context.SaveChangesAsync();
+                  return true;
             }
             return false;
+        }
+
+        public async Task<UserProfileResponse> getProfile()
+        {
+            var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+            var user = await _context.users.SingleOrDefaultAsync(x => x.email == UserEmailClaim);
+
+
+            var wallet = _context.wallets.SingleOrDefault(x => x.userId == user.userId);
+            var response = new UserProfileResponse
+            {
+                userId = user.userId,
+                email = user.email,
+                firstName = user.firstName,
+                lastName = user.lastName,
+                role = user.role,
+                userName = user.userName,
+                walletBalance = wallet.balance
+            };
+            return response;
         }
     }
 }

@@ -19,5 +19,7 @@ namespace SlotGameBackend.Services
         Task<UserProfileResponse> changeProfile(string? userName, string? firstName, string? lastName);
 
         Task<bool> changePassword(string oldPassword, string newPassword);
+
+        Task<UserProfileResponse> getProfile();
     }
 }
