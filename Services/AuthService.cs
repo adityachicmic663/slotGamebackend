@@ -215,5 +215,66 @@ namespace SlotGameBackend.Services
 
             return _permittedExtensions.Contains(fileExtension) && _permittedMimeTypes.Contains(mimeType);
         }
+
+        public async Task<UserProfileResponse> changeProfile(string? userName,string? firstName,string? lastName)
+        {
+            
+          var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+          var user =await  _context.users.SingleOrDefaultAsync(x => x.email == UserEmailClaim);
+
+
+            if (!userName.IsNullOrEmpty())
+            {
+                user.userName = userName;
+            }
+
+            if (!firstName.IsNullOrEmpty())
+            {
+                user.firstName= firstName;
+            }
+
+            if (!lastName.IsNullOrEmpty())
+            {
+                user.lastName = lastName;
+            }
+            _context.users.Update(user);
+            await _context.SaveChangesAsync();
+
+            var wallet=await _context.wallets.SingleOrDefaultAsync(x=>x.userId== user.userId);
+            var newUser = new UserProfileResponse
+            {
+                userId = user.userId,
+                userName = user.userName,
+                firstName = user.firstName,
+                lastName = user.lastName,
+                email = user.email,
+                role = user.role,
+                walletBalance = wallet.balance
+            };
+
+            return newUser;
+        }
+
+       public async Task<bool> changePassword(string oldPassword,string newPassword)
+       {
+            var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+            var user = await _context.users.SingleOrDefaultAsync(x => x.email == UserEmailClaim);
+
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+            bool IsOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(oldPassword, user.hashPassword);
+
+            if (IsOldPasswordCorrect)
+            {
+                user.hashPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+                _context.users.Update(user);
+               await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using BoldReports.Processing.ObjectModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SlotGameBackend.Models;
@@ -245,6 +246,82 @@ namespace SlotGameBackend.Controllers
                 });
             }
             catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
+
+        [Authorize(Roles ="user,admin")]
+        [HttpPut("update-profile")]
+        public async Task<IActionResult> updateProfile(userProfileRequest request)
+        {
+            try
+            {
+                var user=await _authService.changeProfile(request.userName, request.firstName, request.lastName);
+
+                if (user == null)
+                {
+                    return BadRequest(new ResponseModel
+                    {
+                        statusCode = 400,
+                        message = "no user is found",
+                        data = null,
+                        isSuccess = false
+                    });
+                }
+
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "your changes are saved",
+                    data = user,
+                    isSuccess = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
+
+        [HttpPut("change-Password")]
+        [Authorize(Roles ="user,admin")]
+        public async Task<IActionResult> changePassword(changePasswordRequest request)
+        {
+            try
+            {
+                var isChanged = await _authService.changePassword(request.OldPassword, request.NewPassword);
+                if (!isChanged)
+                {
+                    return BadRequest(new ResponseModel
+                    {
+                        statusCode = 400,
+                        message = "your old password is wrong",
+                        data = "no data",
+                        isSuccess = false
+                    });
+                }
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "your password is changed",
+                    data = "no data",
+                    isSuccess = true
+                });
+                
+            }catch(Exception ex)
             {
                 return StatusCode(500, new ResponseModel
                 {

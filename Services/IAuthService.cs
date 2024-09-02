@@ -1,4 +1,5 @@
-﻿using SlotGameBackend.Requests;
+﻿using SlotGameBackend.Models;
+using SlotGameBackend.Requests;
 
 namespace SlotGameBackend.Services
 {
@@ -14,5 +15,9 @@ namespace SlotGameBackend.Services
         Task<bool> resetPassword(ResetPasswordRequest request);
 
         Task<string> uploadProfile(IFormFile file);
+
+        Task<UserProfileResponse> changeProfile(string? userName, string? firstName, string? lastName);
+
+        Task<bool> changePassword(string oldPassword, string newPassword);
     }
 }
