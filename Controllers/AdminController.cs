@@ -61,8 +61,8 @@ namespace SlotGameBackend.Controllers
             }
         }
        
-        [HttpPost("Approve")]
-        public IActionResult Approve(ApproveRequest request)
+        [HttpPost("approve")]
+        public async Task<IActionResult> Approve(ApproveRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -76,14 +76,25 @@ namespace SlotGameBackend.Controllers
             }
             try
             {
-                _walletService.ApproveTransaction(request.transactionId);
-                return Ok(new ResponseModel
+               var isApproved=await  _walletService.ApproveTransaction(request.transactionId);
+                if (isApproved)
+                    return Ok(new ResponseModel
+                    {
+                        statusCode = 200,
+                        message = "your request has been accepted",
+                        data = "no data",
+                        isSuccess = true
+                    });
+
+                var response = new ResponseModel
                 {
-                    statusCode=200,
-                    message="your request has been accepted",
-                    data="no data",
-                    isSuccess = true
-                });
+                    statusCode = 403,
+                    message = "your request could not be accepted",
+                    data = "no data",
+                    isSuccess = false
+                };
+                return Ok(response);
+       
             }catch(Exception ex)
             {
                 return StatusCode(500, new ResponseModel
@@ -96,8 +107,9 @@ namespace SlotGameBackend.Controllers
             }
         }
 
+     
         [HttpPost("reject")]
-        public IActionResult Reject(RejectRequest request)
+        public async Task<IActionResult> Reject(RejectRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -111,7 +123,8 @@ namespace SlotGameBackend.Controllers
             }
             try
             {
-                _walletService.RejectTransaction(request.transactionId);
+              var isRejected= await _walletService.RejectTransaction(request.transactionId);
+                if(isRejected)
                 return Ok(new ResponseModel
                 {
                     statusCode = 200,
@@ -119,6 +132,14 @@ namespace SlotGameBackend.Controllers
                     data = "no data",
                     isSuccess = true
                 });
+                var response = new ResponseModel
+                {
+                    statusCode = 403,
+                    message = "your request could not be accepted",
+                    data = "no data",
+                    isSuccess = false
+                };
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -201,7 +222,7 @@ namespace SlotGameBackend.Controllers
             }
             
         }
-        [HttpPost("AddPayline")]
+        [HttpPost("addPayline")]
         public async Task<IActionResult> AddPayLine(AddPayLineRequest request)
         {
             if (request == null || request.positions == null || request.positions.Count == 0)
@@ -243,7 +264,7 @@ namespace SlotGameBackend.Controllers
             }
 
         }
-        [HttpPost("RemovePayLine")]
+        [HttpDelete("removePayLine")]
         public async Task<IActionResult> RemovePayline(RemovePayLineRequest request)
         {
 
@@ -309,7 +330,7 @@ namespace SlotGameBackend.Controllers
 
             }
         }
-        [HttpPost("AddSymbols")]
+        [HttpPost("addSymbols")]
         public async Task<IActionResult> AddSymbolAsync(SymbolRequest request)
         {
             if (request.Image == null || request.Image.Length == 0)
@@ -475,11 +496,11 @@ namespace SlotGameBackend.Controllers
             }
         }
         [HttpGet("getUsers")]
-        public async Task<IActionResult> getUsers()
+        public async Task<IActionResult> getUsers(Guid userId)
         {
             try
             {
-                var list =await  _adminServices.getUsers();
+                var list =await  _adminServices.getUsers(userId);
                 return Ok(new ResponseModel
                 {
                     statusCode = 200,
@@ -544,12 +565,13 @@ namespace SlotGameBackend.Controllers
             }
 
         }
-        [HttpGet("Download-gameHistory")]
+        [HttpGet("download-gameHistory")]
         public async Task<IActionResult> DownloadGameHistory([FromQuery]downloadRequest request)
         {
             try
-            {
-                var excelReport = await _adminServices.GenerateGameHistoryExcelReport(request.userId,request.startDate,request.endDate);
+              {
+               
+                var excelReport = await _adminServices.GenerateGameHistoryExcelReport(request.userId,request.startDate,request.endDate,request.pageNumber,request.pageSize);
 
                 return File(excelReport, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "GameHistoryReport.xlsx");
                
@@ -565,9 +587,31 @@ namespace SlotGameBackend.Controllers
             }
             
         }
+        [HttpGet("balance/{userId}")]
+        public async Task<IActionResult> getBalance(Guid userId)
+        {
+            try{
+                int balance=await _adminServices.getBalance(userId);
 
-
-
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = $"user{userId} balance is",
+                    data = balance,
+                    isSuccess = true
+                });
+            }catch(Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message="no balance found",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
+     
     }
 
 }

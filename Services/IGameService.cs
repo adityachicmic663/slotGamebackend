@@ -10,7 +10,7 @@ namespace SlotGameBackend.Services
 
         SpinResponse SpinReels(int betAmount,string clientSeed);
 
-        IEnumerable<gameHistoryResponse> gamehistory(Guid userId,int pageNumber,int pageSize);
+        IEnumerable<gameHistoryResponse> gamehistory(Guid? userId,int pageNumber,int pageSize);
 
     }
 }

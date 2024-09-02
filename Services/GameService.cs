@@ -179,6 +179,7 @@ namespace SlotGameBackend.Services
                 spinTime=DateTime.Now,
                 reelsOutcome=reelsOutComeJson
             };
+            session.spinResults.Add(spinResult);
             _context.spinResults.Add(spinResult);
             _context.SaveChanges();
 
@@ -270,20 +271,23 @@ namespace SlotGameBackend.Services
             }
             return winnings;
         }
-        public IEnumerable<gameHistoryResponse> gamehistory(Guid userId, int pageNumber, int pageSize)
+        public IEnumerable<gameHistoryResponse> gamehistory(Guid? userId, int pageNumber, int pageSize)
         {
-            var user = _context.users.Include(u => u.sessions)
-                               .ThenInclude(gs => gs.spinResults)
-                               .FirstOrDefault(x => x.userId == userId);
+            List<Spin> spins= new List<Spin>();
 
-            // If the user is not found, return an empty list (or handle it as appropriate)
-            if (user == null)
+            if(userId.HasValue && userId.Value!=Guid.Empty)
             {
-                return new List<gameHistoryResponse>();
+                var user = _context.users.Include(u => u.sessions)
+                             .ThenInclude(gs => gs.spinResults)
+                             .FirstOrDefault(x => x.userId == userId);
+
+                 spins = user.sessions.SelectMany(gs => gs.spinResults).OrderByDescending(gs => gs.spinTime).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            }
+            else
+            {
+                spins = _context.spinResults.OrderByDescending(x=>x.spinTime).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
             }
 
-            // Get all spins from the user's game sessions
-            var spins = user.sessions.SelectMany(gs => gs.spinResults).OrderByDescending(gs=>gs.spinTime).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
             var list = new List<gameHistoryResponse>();
             foreach (var spin in spins)
             {

@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using Pomelo.EntityFrameworkCore.MySql.Query.ExpressionTranslators.Internal;
 using SlotGameBackend.Models;
 using System.Security.Claims;
@@ -71,10 +72,10 @@ namespace SlotGameBackend.Services
             return responseList;
         }
 
-        public void ApproveTransaction(Guid transactionId)
+        public async Task<bool> ApproveTransaction(Guid transactionId)
         {
             var transaction=_context.transactions.Include(t=>t.wallet).ThenInclude(x=>x.user).FirstOrDefault(t=>t.transactionId==transactionId);
-            if (transaction!=null || transaction.transactionStatus==TransactionStatus.Pending){
+            if (transaction!=null && transaction.transactionStatus==TransactionStatus.Pending){
                 transaction.transactionStatus = TransactionStatus.Approved;
                 transaction.amount = transaction.amount;
                 transaction.ApprovedAt=DateTime.Now;
@@ -88,42 +89,54 @@ namespace SlotGameBackend.Services
                     transaction.wallet.balance -= transaction.amount;
                 }
 
-                _context.transactions.Update(transaction);
-                _context.SaveChanges();
+                 _context.transactions.Update(transaction);
+                await _context.SaveChangesAsync();
+                return true;
             }
+
+            return false;
 
         }
 
-        public void RejectTransaction(Guid transactionId)
+        public async Task<bool> RejectTransaction(Guid transactionId)
         {
             var transaction = _context.transactions.Include(t => t.wallet).ThenInclude(x => x.user).FirstOrDefault(t => t.transactionId == transactionId);
 
-            if (transaction != null || transaction.transactionStatus!=TransactionStatus.Approved)
+            if (transaction != null && transaction.transactionStatus!=TransactionStatus.Approved)
             {
                 transaction.transactionStatus = TransactionStatus.Rejected;
 
                 _context.transactions.Update(transaction) ;
-                _context.SaveChanges();
+               await  _context.SaveChangesAsync();
+                return true;    
             }
+            return false;
         }
 
-        public IEnumerable<TransactionResponse> GetTransactionHistory(Guid userId,int pageNumber,int pageSize)
+        public IEnumerable<TransactionResponse> GetTransactionHistory(Guid? userId,int pageNumber,int pageSize)
         {
-            var user = _context.users.Include(u=>u.wallet).FirstOrDefault(x=>x.userId==userId);
-            if (user == null)
+            List<Transaction> transactionList=new List<Transaction>();
+            if (userId.HasValue && userId.Value!=Guid.Empty)
             {
-                throw new InvalidDataException("user is not found");
-            }
-           
-             var wallet=user.wallet;
-           
+                var user = _context.users.Include(u => u.wallet).FirstOrDefault(x => x.userId == userId);
+                if (user == null)
+                {
+                    throw new InvalidDataException("user is not found");
+                }
+
+                var wallet = user.wallet;
+
                 if (wallet == null)
                 {
                     throw new InvalidDataException("Wallet not found for the user.");
                 }
-            
-            var transactionList = _context.transactions.Where(x => x.walletId == wallet.walletId).OrderByDescending(x => x.requestedAt).ThenByDescending(x => x.ApprovedAt).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
 
+                 transactionList = _context.transactions.Where(x => x.walletId == wallet.walletId).OrderByDescending(x => x.requestedAt).ThenByDescending(x => x.ApprovedAt).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            }
+            else
+            {
+                transactionList=_context.transactions.OrderByDescending(x=>x.requestedAt).ThenByDescending(x=>x.ApprovedAt).Skip((pageNumber-1)*pageSize).Take(pageSize).ToList();
+            }
      
             List<TransactionResponse> result = new List<TransactionResponse>();
 
@@ -146,7 +159,7 @@ namespace SlotGameBackend.Services
         }
 
         public IEnumerable<TransactionResponse> SearchTransaction(QueryType type,int pageNumber,int pageSize) {
-        {
+        
                 DateTime startDate = DateTime.MinValue;
                 DateTime endDate = DateTime.MaxValue;
 
@@ -183,6 +196,16 @@ namespace SlotGameBackend.Services
                 }
                 return responseList;
         }
+
+        public async Task<int> checkBalance()
+        {
+            var userEmail = _httpContextAccessor.HttpContext.User.Claims
+                                 .FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+            var user = await _context.users.FirstOrDefaultAsync(x => x.email == userEmail);
+
+            var wallet = await _context.wallets.FirstOrDefaultAsync(x => x.userId == user.userId);
+
+            return wallet.balance;
         }
        
     }

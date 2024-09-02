@@ -1,4 +1,5 @@
-﻿using SlotGameBackend.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using SlotGameBackend.Models;
 
 namespace SlotGameBackend.Services
 {
@@ -18,10 +19,12 @@ namespace SlotGameBackend.Services
 
         Task<List<PayLineResponse>> getPayline();
 
-        Task<List<UserResponse>> getUsers();
+        Task<List<UserResponse>> getUsers(Guid? userId);
 
         Task<bool> blockUser(Guid userId);
 
-        Task<byte[]> GenerateGameHistoryExcelReport(Guid userId, DateTime startDate, DateTime endDate);
+        Task<byte[]> GenerateGameHistoryExcelReport(Guid? userId, DateTime startDate, DateTime endDate,int pageNumber,int pageSize);
+
+        Task<int> getBalance(Guid userId);
     }
 }

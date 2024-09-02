@@ -8,6 +8,7 @@ using System.IO;
 using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Configuration.UserSecrets;
 
 namespace SlotGameBackend.Services
 {
@@ -17,9 +18,9 @@ namespace SlotGameBackend.Services
         private readonly IGameService _gameService;
        
         private readonly string _uploadPath;
-
       
-        public AdminServices(slotDataContext context,IConfiguration configuration,IGameService gameService) {
+        public AdminServices(slotDataContext context,IConfiguration configuration,IGameService gameService)
+        {
             _context = context;
             _gameService = gameService;
             _uploadPath = configuration.GetValue<string>("UploadPath");
@@ -162,10 +163,18 @@ namespace SlotGameBackend.Services
             return paylines;
         }
 
-        public async Task<List<UserResponse>> getUsers()
+        public async Task<List<UserResponse>> getUsers(Guid? userId)
         {
-            var list = await _context.users.Where(x=>x.role=="user").ToListAsync();
-
+            List<UserModel> list = new List<UserModel>();
+            if(userId.HasValue && userId.Value!=Guid.Empty)
+            {
+                list = await _context.users.Where(x=>x.userId==userId).ToListAsync();
+            }
+            else
+            {
+                list = await _context.users.Where(x => x.role == "user").ToListAsync();
+            }
+             
             var newList=new List<UserResponse>();
 
             foreach(var user in list)
@@ -195,18 +204,39 @@ namespace SlotGameBackend.Services
             return false;
         }
 
-        public async Task<byte[]> GenerateGameHistoryExcelReport(Guid userId,DateTime startDate,DateTime endDate)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="pageNumber"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public async Task<byte[]> GenerateGameHistoryExcelReport(Guid? userId,DateTime startDate,DateTime endDate,int pageNumber,int pageSize)
         {
-            var user =await  _context.users.Include(u => u.sessions)
+            List<Spin> spins=new List<Spin>();
+            if (userId.HasValue  && userId.Value!=Guid.Empty) 
+            {
+                var user = await _context.users.Include(u => u.sessions)
                                .ThenInclude(gs => gs.spinResults)
                                .FirstOrDefaultAsync(x => x.userId == userId);
 
-            if(user == null)
-            {
-                throw new Exception("User not found.");
-            }
+                if (user == null)
+                {
+                    Console.WriteLine($"User with ID {userId} not found.");
+                    throw new Exception("User not found.");
 
-            var spins=user.sessions.SelectMany(gs=>gs.spinResults).Where(spin=>spin.spinTime>=startDate && spin.spinTime<=endDate).OrderByDescending(spin=>spin.spinTime).ToList();
+                }
+
+                spins = user.sessions.SelectMany(gs => gs.spinResults).Where(spin => spin.spinTime >= startDate && spin.spinTime <= endDate).OrderByDescending(spin => spin.spinTime).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            }
+            else
+            {
+                spins=await _context.spinResults.Where(spin=>spin.spinTime>=startDate && spin.spinTime <= endDate).OrderByDescending(spin => spin.spinTime).Skip((pageNumber-1)*pageSize).Take(pageSize).ToListAsync();    
+            }
+            
 
             if (!spins.Any())
             {
@@ -255,6 +285,14 @@ namespace SlotGameBackend.Services
 
                 return excelReport;
             }
-            }
+
+           
         }
+
+        public async Task<int> getBalance(Guid userId)
+        {
+            var wallet= await _context.wallets.FirstOrDefaultAsync(x=>x.userId== userId);
+            return wallet.balance;
+        }
+    }
 }

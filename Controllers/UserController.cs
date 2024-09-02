@@ -53,5 +53,31 @@ namespace SlotGameBackend.Controllers
                 });
             }
         }
+
+        [HttpGet("check-balance")]
+        public async Task<IActionResult> checkbalance()
+        {
+            try
+            {
+                int amount = await _walletService.checkBalance();
+                return Ok(new ResponseModel
+                {
+                    statusCode = 200,
+                    message = "your current balance",
+                    data = amount,
+                    isSuccess = true
+                });
+            }catch(Exception ex)
+            {
+                return StatusCode(500, new ResponseModel
+                {
+                    statusCode = 500,
+                    message = "Internal server error",
+                    data = ex.InnerException?.Message ?? ex.Message,
+                    isSuccess = false
+                });
+            }
+        }
+
     }
 }

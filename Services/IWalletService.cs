@@ -10,13 +10,15 @@ namespace SlotGameBackend.Services
 
         IEnumerable<TransactionResponse> GetPendingTransactions(int pageNumber,int pageSize);
 
-        void ApproveTransaction(Guid transactionId);
+        Task<bool> ApproveTransaction(Guid transactionId);
 
-        void RejectTransaction(Guid transactionId);
+        Task<bool> RejectTransaction(Guid transactionId);
 
-        IEnumerable<TransactionResponse> GetTransactionHistory(Guid userId,int pageNumber,int pageSize);
+        IEnumerable<TransactionResponse> GetTransactionHistory(Guid? userId,int pageNumber,int pageSize);
 
         IEnumerable<TransactionResponse> SearchTransaction(QueryType type, int pageNumber, int pageSize);
+
+        Task<int> checkBalance();
 
     }
 }

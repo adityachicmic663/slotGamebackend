@@ -58,13 +58,14 @@ namespace SlotGameBackend.Services
         {
             var user = await  _context.users.SingleOrDefaultAsync(x => x.email == request.email);
 
-            if (user.isBlocked)
-            {
-                throw new InvalidOperationException("sorry you are blocked by the admin");
-            }
+           
             if (user == null)
             {
                 return null;
+            }
+            if (user.isBlocked)
+            {
+                throw new InvalidOperationException("sorry you are blocked by the admin");
             }
             if ( !BCrypt.Net.BCrypt.Verify(request.password, user.hashPassword))
             {

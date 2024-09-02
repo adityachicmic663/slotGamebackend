@@ -17,7 +17,7 @@ namespace SlotGameBackend.Controllers
             _authService = authService;
         }
 
-        [HttpPost("Register")]
+        [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register(RegisterRequest request)
         {
@@ -119,7 +119,7 @@ namespace SlotGameBackend.Controllers
 
 
       
-        [HttpPost("forgotpassword")]
+        [HttpPost("forgotPassword")]
         public async Task<IActionResult> ForgotPassword(forgotPasswordRequest request)
         {
             if (!ModelState.IsValid)
@@ -168,7 +168,7 @@ namespace SlotGameBackend.Controllers
         }
 
        
-        [HttpPost("resetpassword")]
+        [HttpPost("resetPassword")]
         public async Task<IActionResult> ResetPasswordWithOtp(ResetPasswordRequest request)
         {
             if (!ModelState.IsValid)

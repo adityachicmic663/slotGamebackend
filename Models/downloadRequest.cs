@@ -7,5 +7,9 @@
         public DateTime startDate { get; set; }
 
         public DateTime endDate { get; set; }
+
+        public int pageNumber { get; set; }
+
+        public int pageSize { get; set; }
     }
 }
