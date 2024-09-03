@@ -46,8 +46,26 @@ namespace SlotGameBackend.Services
                     role = "user"
                 };
 
+          
+
+
                 await _context.users.AddAsync(newUser);
                await  _context.SaveChangesAsync();
+                 var isWallet=_context.wallets.Any(x=>x.userId==newUser.userId);
+                 if (!isWallet)
+                 {
+                var wallet = new Wallet
+                {
+                    walletId = Guid.NewGuid(),
+                    userId = newUser.userId,
+                    balance = 1000
+                };
+
+                _context.wallets.Add(wallet);
+              await  _context.SaveChangesAsync();
+                 }
+            
+
                 return await Login(new LoginRequest
                 {   email = request.email,
                     password = request.password,
