@@ -282,7 +282,18 @@ namespace SlotGameBackend.Services
             var UserEmailClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
             var user = await _context.users.SingleOrDefaultAsync(x => x.email == UserEmailClaim);
 
-
+            var isWallet = _context.wallets.Any(x => x.userId == user.userId);
+            if(!isWallet)
+            {
+                var newWallet = new Wallet
+                {
+                    walletId = Guid.NewGuid(),
+                    userId = user.userId,
+                    balance = 1000
+                };
+                _context.wallets.Add(newWallet);
+                await _context.SaveChangesAsync();
+            }
             var wallet = _context.wallets.SingleOrDefault(x => x.userId == user.userId);
             var response = new UserProfileResponse
             {
